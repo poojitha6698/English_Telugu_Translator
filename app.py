@@ -1,80 +1,134 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from transformers import MarianMTModel, MarianTokenizer
-import torch
-import os
-import logging
+import streamlit as st
+from translate import translate_text, load_model
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+st.set_page_config(
+    page_title="English → Telugu Translator",
+    page_icon="🌿",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
 
-app = FastAPI(title="English to Telugu Translator", version="1.0.0")
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tiro+Telugu&family=Inter:wght@400;500;600&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+.hero {
+    background: linear-gradient(135deg, #0f4c35 0%, #1a6b4a 60%, #2d8f63 100%);
+    border-radius: 16px;
+    padding: 2.5rem 2rem 2rem 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 24px rgba(15,76,53,0.18);
+}
+.hero h1 { color: #e8f5ee; font-size: 2rem; font-weight: 600; margin: 0 0 0.4rem 0; letter-spacing: -0.5px; }
+.hero .telugu-title { font-family: 'Tiro Telugu', serif; color: #a8dfc0; font-size: 1.25rem; margin: 0; }
+.hero .subtitle { color: #c5e8d5; font-size: 0.92rem; margin-top: 0.7rem; }
 
-# Model config
-MODEL_NAME = "Helsinki-NLP/opus-mt-en-mul"
-TELUGU_CODE = ">>tel<<"
+.box-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0f4c35; margin-bottom: 0.4rem; }
 
-tokenizer = None
-model = None
+.output-box {
+    background: #f0faf4;
+    border: 1.5px solid #a8dfc0;
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    min-height: 120px;
+    font-family: 'Tiro Telugu', serif;
+    font-size: 1.25rem;
+    line-height: 1.8;
+    color: #0f3d28;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 
-def load_model():
-    global tokenizer, model
-    logger.info("Loading translation model...")
-    tokenizer = MarianTokenizer.from_pretrained(MODEL_NAME)
-    model = MarianMTModel.from_pretrained(MODEL_NAME)
-    model.eval()
-    logger.info("Model loaded successfully!")
+div[data-testid="stButton"] > button {
+    background: linear-gradient(135deg, #0f4c35, #1a6b4a);
+    color: #e8f5ee;
+    border: none;
+    border-radius: 10px;
+    padding: 0.65rem 2.4rem;
+    font-size: 1rem;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+div[data-testid="stButton"] > button:hover { opacity: 0.88; color: #ffffff; }
 
-@app.on_event("startup")
-async def startup_event():
-    load_model()
+.footer { text-align: center; color: #9cbbaa; font-size: 0.78rem; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #e0ede6; }
+#MainMenu, footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
 
-class TranslationRequest(BaseModel):
-    text: str
+@st.cache_resource(show_spinner=False)
+def get_model():
+    return load_model()
 
-class TranslationResponse(BaseModel):
-    original: str
-    translated: str
-    status: str
+st.markdown("""
+<div class="hero">
+    <h1>🌿 English → Telugu Translator</h1>
+    <p class="telugu-title">ఇంగ్లీష్ నుండి తెలుగుకు అనువాదం</p>
+    <p class="subtitle">Powered by Helsinki-NLP · Opus-MT Transformer</p>
+</div>
+""", unsafe_allow_html=True)
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+with st.spinner("⏳ Loading translation model (first run ~30s)…"):
+    tokenizer, model = get_model()
 
-@app.post("/translate", response_model=TranslationResponse)
-async def translate(req: TranslationRequest):
-    if not req.text.strip():
-        return JSONResponse(status_code=400, content={"error": "Text cannot be empty"})
+EXAMPLES = [
+    "Hello, how are you?",
+    "Today is a beautiful day.",
+    "I love learning new languages.",
+    "What is your name?",
+    "The sky is blue.",
+]
 
-    try:
-        # Prepend Telugu language code
-        src_text = f"{TELUGU_CODE} {req.text.strip()}"
-        inputs = tokenizer([src_text], return_tensors="pt", padding=True, truncation=True, max_length=512)
+st.markdown('<p class="box-label">Quick Examples</p>', unsafe_allow_html=True)
+cols = st.columns(len(EXAMPLES))
+selected_example = None
+for i, (col, ex) in enumerate(zip(cols, EXAMPLES)):
+    if col.button(f"#{i+1}", key=f"ex_{i}", help=ex):
+        selected_example = ex
 
-        with torch.no_grad():
-            translated = model.generate(**inputs, num_beams=4, early_stopping=True)
+st.markdown('<p class="box-label" style="margin-top:1.2rem;">English Text</p>', unsafe_allow_html=True)
 
-        result = tokenizer.decode(translated[0], skip_special_tokens=True)
+if "input_text" not in st.session_state:
+    st.session_state["input_text"] = ""
+if selected_example:
+    st.session_state["input_text"] = selected_example
 
-        return TranslationResponse(
-            original=req.text.strip(),
-            translated=result,
-            status="success"
-        )
-    except Exception as e:
-        logger.error(f"Translation error: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+input_text = st.text_area(
+    label="",
+    value=st.session_state["input_text"],
+    height=130,
+    placeholder="Type or paste English text here…",
+    label_visibility="collapsed",
+)
 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "model_loaded": model is not None}
+translate_clicked = st.button("🔤 Translate to Telugu")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=False)
+if translate_clicked:
+    text = input_text.strip()
+    if not text:
+        st.warning("⚠️ Please enter some English text to translate.")
+    else:
+        with st.spinner("Translating…"):
+            result = translate_text(text, tokenizer, model)
+
+        st.markdown('<p class="box-label" style="margin-top:1.4rem;">Telugu Translation</p>', unsafe_allow_html=True)
+        st.markdown(f'<div class="output-box">{result["telugu"]}</div>', unsafe_allow_html=True)
+
+        st.markdown("**📋 Copy:**")
+        st.code(result["telugu"], language=None)
+
+        with st.expander("ℹ️ Translation Details"):
+            st.markdown(f"**Model:** `Helsinki-NLP/opus-mt-en-mul`")
+            st.markdown(f"**Input tokens:** {result['input_tokens']}")
+            st.markdown(f"**Output tokens:** {result['output_tokens']}")
+            st.markdown(f"**Inference time:** {result['time_ms']} ms")
+
+st.markdown("""
+<div class="footer">
+    Built with ❤️ using Streamlit + Hugging Face Transformers &nbsp;|&nbsp; Helsinki-NLP/opus-mt-en-mul
+</div>
+""", unsafe_allow_html=True)

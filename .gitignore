@@ -1,15 +1,24 @@
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
-.env
-.venv
+*.pyd
+.Python
 venv/
 env/
-*.egg-info/
-dist/
-build/
+.env
+
+# Model cache (don't push ~300 MB weights to git)
+~/.cache/huggingface/
+.cache/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
 .DS_Store
-*.log
-.pytest_cache/
-htmlcov/
-.coverage
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

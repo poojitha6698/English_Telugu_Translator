@@ -1,16 +1,9 @@
-# 🌐 English → Telugu Translator
+# 🌿 English → Telugu Translator
 
-A full-stack AI translation app using **FastAPI** + **Hugging Face MarianMT Transformer**.
+A Streamlit web app that translates English text to Telugu using the **Helsinki-NLP/opus-mt-en-mul** MarianMT transformer model from Hugging Face.
 
----
-
-## ✨ Features
-- Real-time English to Telugu translation
-- Helsinki-NLP `opus-mt-en-mul` transformer model
-- Clean, modern UI with example phrases
-- Copy-to-clipboard support
-- REST API with `/translate` endpoint
-- Docker-ready for cloud deployment
+## 🚀 Live Demo
+Deploy instantly on [Streamlit Community Cloud](https://streamlit.io/cloud).
 
 ---
 
@@ -18,96 +11,72 @@ A full-stack AI translation app using **FastAPI** + **Hugging Face MarianMT Tran
 
 ```
 english-telugu-translator/
-├── app.py                 # FastAPI backend
-├── requirements.txt
-├── Procfile               # For Render/Railway
-├── Dockerfile             # For Docker deployment
-├── templates/
-│   └── index.html         # Frontend UI
-└── static/
-    ├── css/style.css
-    └── js/main.js
+├── app.py                  # Streamlit UI
+├── translate.py            # Translation logic (model load + inference)
+├── requirements.txt        # Python dependencies
+├── .streamlit/
+│   └── config.toml         # Theme & server settings
+└── README.md
 ```
 
 ---
 
-## 🚀 Local Setup
+## 🛠️ Local Setup
 
 ```bash
-# 1. Clone & enter project
-git clone <your-repo-url>
+# 1. Clone the repo
+git clone https://github.com/YOUR_USERNAME/english-telugu-translator.git
 cd english-telugu-translator
 
-# 2. Create virtual environment
+# 2. Create a virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Run the server
-uvicorn app:app --reload --port 8000
-
-# 5. Open in browser
-# http://localhost:8000
+# 4. Run the app
+streamlit run app.py
 ```
 
-> ⚠️ First run downloads the model (~300 MB). Subsequent runs are instant.
+The app opens at **http://localhost:8501**  
+> ⚠️ First run downloads the model (~300 MB). Subsequent runs use the cached version.
 
 ---
 
-## 🌍 Deploy to Render (Free)
+## ☁️ Deploy on Streamlit Community Cloud
 
-1. Push this repo to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your GitHub repo
-4. Set:
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn app:app --host 0.0.0.0 --port $PORT`
-5. Click **Deploy**
+1. Push this repo to GitHub (public or private).
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **New app**.
+3. Select your repo, branch `main`, and set **Main file path** to `app.py`.
+4. Click **Deploy** — done! 🎉
 
----
-
-## 🐳 Deploy with Docker
-
-```bash
-docker build -t en-te-translator .
-docker run -p 8000:8000 en-te-translator
-```
+> **Note:** Streamlit Cloud has a 1 GB memory limit on the free tier. The model (~300 MB) fits comfortably.
 
 ---
 
-## 🔌 API Reference
+## ⚙️ How It Works
 
-### `POST /translate`
-```json
-// Request
-{ "text": "Good morning" }
-
-// Response
-{
-  "original": "Good morning",
-  "translated": "శుభోదయం",
-  "status": "success"
-}
-```
-
-### `GET /health`
-```json
-{ "status": "ok", "model_loaded": true }
-```
+| Step | Detail |
+|------|--------|
+| Model | `Helsinki-NLP/opus-mt-en-mul` (MarianMT) |
+| Target tag | `>>tel<<` prepended to force Telugu output |
+| Beam search | 4 beams, no-repeat ngram size 3 |
+| Max tokens | 512 input / 512 output |
 
 ---
 
-## 🧠 Model Info
+## 📦 Dependencies
 
-| Property | Value |
-|----------|-------|
-| Model | `Helsinki-NLP/opus-mt-en-mul` |
-| Architecture | MarianMT (Transformer) |
-| Target Language Code | `>>tel<<` |
-| Source | [Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-en-mul) |
+| Package | Purpose |
+|---------|---------|
+| `streamlit` | Web UI |
+| `transformers` | Hugging Face model loading & inference |
+| `torch` | PyTorch backend |
+| `sentencepiece` | Tokenizer subword model |
+| `sacremoses` | Text pre/post-processing |
 
 ---
 
-Built with ♥ using FastAPI + Hugging Face Transformers
+## 📝 License
+MIT
