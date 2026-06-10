@@ -1,59 +1,15 @@
-# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.pyd
-
-# Virtual Environments
+.env
+.venv
 venv/
 env/
-.venv/
-
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# IDE
-.vscode/
-.idea/
-
-# OS Files
+*.egg-info/
+dist/
+build/
 .DS_Store
-Thumbs.db
-
-# Training files
-data/
-logs/
-checkpoints/
-
-# Training scripts
-src/train.py
-src/data_preprocessing.py
-src/save_artifacts.py
-
-# TensorBoard
-runs/
-tensorboard_logs/
-
-# Model backups
-*.h5
-*.keras.bak
-
-# Environment variables
-.env
-
-# Keep deployment artifacts
-!artifacts/
-!artifacts/transformer.keras
-!artifacts/source_vectorizer.pkl
-!artifacts/target_vectorizer.pkl
-
-# Keep source files needed for inference
-!src/
-!src/model_builder.py
-!src/predict.py
-
-# Keep deployment files
-!app.py
-!requirements.txt
-!README.md
+*.log
+.pytest_cache/
+htmlcov/
+.coverage
